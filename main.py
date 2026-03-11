@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 import requests
 from datetime import datetime, timedelta
 
@@ -8,12 +8,14 @@ app = FastAPI()
 
 # /price -> current cryptocurrency price
 @app.get("/price")
-def get_price(coin: str = Query("bitcoin", description="Coin ID in CoinGecko")):
+def get_price(
+        coin: str = Query("bitcoin", description="Coin ID in CoinGecko"),
+        currency: str = Query("usd", description="Target currency (usd, eur, pln...)")):
     url = "https://api.coingecko.com/api/v3/simple/price"
 
     params = {
         "ids" : coin,
-        "vs_currencies" : "usd"
+        "vs_currencies" : currency
     }
 
     response = requests.get(url, params=params)
@@ -26,7 +28,9 @@ def get_price(coin: str = Query("bitcoin", description="Coin ID in CoinGecko")):
     #       }
     #   }
 
-    price = data.get(coin, {}).get("usd")
+    price = data.get(coin)
+    if price is None:
+        raise HTTPException(status_code=404, detail="Coin not found")
 
     return{
         "coin" : coin,
@@ -38,12 +42,13 @@ def get_price(coin: str = Query("bitcoin", description="Coin ID in CoinGecko")):
 @app.get("/history")
 def get_history(
     coin : str = Query("bitcoin", description="Coin ID"),
-    days : int = Query(7, description="number of days back")
+    days : int = Query(7, description="number of days back", ge=1, le=365),
+    currency: str = Query("usd", description="Target currency")
 ):
     url = f"https://api.coingecko.com/api/v3/coins/{coin}/market_chart"
 
     params = {
-        "vs_currency" : "usd",
+        "vs_currency" : currency,
         "days" : days
     }
 
@@ -51,6 +56,8 @@ def get_history(
     data = response.json()
 
     prices = data.get("prices", [])
+    if prices is None:
+        raise HTTPException(status_code=404, detail="Coin not found")
 
 
     result = []
@@ -70,6 +77,7 @@ def get_history(
 
     return{
         "coin" : coin,
+        "currency": currency,
         "days" : days,
         "prices" : result
     }
