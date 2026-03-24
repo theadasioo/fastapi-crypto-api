@@ -17,15 +17,49 @@ def get_history(coin = "bitcoin", days = 7, currency = "usd"):
     print("HISTORY: ")
     print(response.json())
 
-if __name__ == "__main__":
-    print("USD TEST")
-    get_price("bitcoin", "usd")
+def create_alert(coin, target_price, condition):
+    response = requests.post(
+        f"{BASE_URL}/alerts",
+        json={
+            "coin": coin,
+            "target_price": target_price,
+            "condition": condition
+        }
+    )
 
-    print("\nEUR TEST")
+    print("\nCREATE ALERT:")
+    print(response.json())
+
+
+def get_alerts():
+    response = requests.get(f"{BASE_URL}/alerts")
+
+    print("\nALL ALERTS:")
+    print(response.json())
+
+
+def check_alerts():
+    response = requests.get(f"{BASE_URL}/check_alerts")
+
+    print("\nCHECK ALERTS:")
+    print(response.json())
+
+
+if __name__ == "__main__":
+
+    # PRICE TEST
+    get_price("bitcoin", "usd")
     get_price("bitcoin", "eur")
 
-    print("\nPLN TEST")
-    get_price("bitcoin", "pln")
-
-    print("\nHISTORY EUR")
+    # HISTORY TEST
     get_history("bitcoin", 1, "eur")
+
+    # CREATE ALERTS
+    create_alert("bitcoin", 80000, "above")
+    create_alert("bitcoin", 60000, "below")
+
+    # GET ALERTS
+    get_alerts()
+
+    # CHECK ALERTS
+    check_alerts()
